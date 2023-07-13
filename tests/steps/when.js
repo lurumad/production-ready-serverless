@@ -16,6 +16,8 @@ const viaHandler = async (event, functionName) => {
     "headers.content-type",
     "application/json"
   );
+  console.log(response);
+  console.log(contentType);
   if (response.body && contentType === "application/json") {
     response.body = JSON.parse(response.body);
   }

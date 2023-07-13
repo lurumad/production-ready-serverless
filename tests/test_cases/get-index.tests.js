@@ -7,11 +7,11 @@ const teardown = require("../../db/teardown");
 describe(`When we invoke the GET / endpoint`, () => {
   beforeAll(async () => {
     await init();
-    await seed();
+    //await seed();
   });
 
   afterAll(async () => {
-    await teardown.teardown();
+    //await teardown.teardown();
   });
 
   it(`Should return the index page with 8 restaurants`, async () => {

@@ -6,11 +6,11 @@ const teardown = require("../../db/teardown");
 describe(`When we invoke the GET /restaurants endpoint`, () => {
   beforeAll(async () => {
     await init();
-    await seed();
+    //await seed();
   });
 
   afterAll(async () => {
-    await teardown.teardown();
+    //await teardown.teardown();
   });
 
   it(`Should return an array of 8 restaurants`, async () => {

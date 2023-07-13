@@ -13,11 +13,11 @@ describe(`When we invoke the POST /restaurants/search endpoint with theme 'carto
   });
 
   beforeEach(async () => {
-    await seed();
+    //await seed();
   });
 
   afterEach(async () => {
-    await teardown.teardown();
+    //await teardown.teardown();
   });
 
   afterAll(async () => {
