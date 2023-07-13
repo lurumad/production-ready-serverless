@@ -1,0 +1,19 @@
+config:
+  target: "https://i7cr9s9p9a.execute-api.us-east-1.amazonaws.com"
+  phases:
+    - name: Warm up the API
+      duration: 60
+      arrivalRate: 5
+      rampTo: 10
+    - name: Ramp up to peak load
+      duration: 60
+      arrivalRate: 10
+      rampTo: 50
+    - name: Sustained peak load
+      duration: 300
+      rampTo: 50
+scenarios:
+  - name: Get index
+    flow:
+      - get:
+          url: "/dev"

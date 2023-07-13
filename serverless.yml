@@ -1,0 +1,178 @@
+service: workshop-${self:custom.name}
+
+frameworkVersion: "3"
+
+custom:
+  name: luru
+  apiGatewayThrottling:
+    maxRequestsPerSecond: 10
+    maxConcurrentRequests: 5
+  export-env:
+    overwrite: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  endpointType: regional
+  environment:
+    rest_api_url: !Sub https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: dynamodb:Scan
+          Resource: !GetAtt RestaurantsTable.Arn
+        - Effect: Allow
+          Action: execute-api:Invoke
+          Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/${sls:stage}/GET/restaurants
+
+functions:
+  get-index:
+    handler: functions/get-index.handler
+    events:
+      - http:
+          path: /
+          method: get
+          throttling:
+            maxRequestsPerSecond: 20
+            maxConcurrentRequests: 10
+    environment:
+      restaurants_api: !Sub https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}/restaurants
+      cognito_user_pool_id: !Ref CognitoUserPool
+      cognito_client_id: !Ref WebCognitoUserPoolClient
+      cognito_server_client_id: !Ref ServerCognitoUserPoolClient
+
+  get-restaurants:
+    handler: functions/get-restaurants.handler
+    events:
+      - http:
+          path: /restaurants
+          method: get
+          authorizer: aws_iam
+          throttling:
+            maxRequestsPerSecond: 20
+            maxConcurrentRequests: 10
+    environment:
+      restaurants_table: !Ref RestaurantsTable
+
+  search-restaurants:
+    handler: functions/search-restaurants.handler
+    events:
+      - http:
+          path: /restaurants/search
+          method: post
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: !GetAtt CognitoUserPool.Arn
+          throttling:
+            maxRequestsPerSecond: 5
+            maxConcurrentRequests: 2
+    environment:
+      restaurants_table: !Ref RestaurantsTable
+
+resources:
+  Resources:
+    RestaurantsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        AliasAttributes:
+          - email
+        UsernameConfiguration:
+          CaseSensitive: false
+        AutoVerifiedAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireUppercase: true
+            RequireSymbols: true
+        Schema:
+          - AttributeDataType: String
+            Mutable: true
+            Name: given_name
+            Required: true
+            StringAttributeConstraints:
+              MinLength: "1"
+          - AttributeDataType: String
+            Mutable: true
+            Name: family_name
+            Required: true
+            StringAttributeConstraints:
+              MinLength: "1"
+          - AttributeDataType: String
+            Mutable: true
+            Name: email
+            Required: true
+            StringAttributeConstraints:
+              MinLength: "1"
+
+    WebCognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: web
+        UserPoolId: !Ref CognitoUserPool
+        ExplicitAuthFlows:
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        PreventUserExistenceErrors: ENABLED
+
+    ServerCognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: server
+        UserPoolId: !Ref CognitoUserPool
+        ExplicitAuthFlows:
+          - ALLOW_ADMIN_USER_PASSWORD_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        PreventUserExistenceErrors: ENABLED
+
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Comment: ${self:custom.name}
+          DefaultCacheBehavior:
+            TargetOriginId: MyFirstOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            DefaultTTL: 30
+            ForwardedValues:
+              QueryString: false
+          Enabled: true
+          Origins:
+            - Id: MyFirstOrigin
+              DomainName: !Sub ${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com
+              OriginPath: !Sub /${sls:stage}
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+
+  Outputs:
+    RestaurantsTableName:
+      Value: !Ref RestaurantsTable
+    CognitoUserPoolId:
+      Value: !Ref CognitoUserPool
+    CognitoUserPoolArn:
+      Value: !GetAtt CognitoUserPool.Arn
+    CognitoUserPoolWebClientId:
+      Value: !Ref WebCognitoUserPoolClient
+    CognitoUserPoolServerClientId:
+      Value: !Ref ServerCognitoUserPoolClient
+
+plugins:
+  - serverless-export-env
+  - serverless-api-gateway-throttling
