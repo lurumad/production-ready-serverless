@@ -51,20 +51,21 @@ const viaHttp = async (relPath, method, opts) => {
     if (_.get(opts, "iam_auth", false) === true) {
       headers = signHttpRequest(url);
     }
-
+    console.log("headers: " + headers);
     const authHeader = _.get(opts, "auth");
     if (authHeader) {
       headers.Authorization = authHeader;
     }
-
+    console.log("headers 2: " + headers);
     const httpReq = http.request({
       method,
       url,
       headers,
       data,
     });
-
+    console.log("httpReq: " + httpReq);
     const res = await httpReq;
+    console.log("res: " + res);
     return respondFrom(res);
   } catch (err) {
     if (err.status) {

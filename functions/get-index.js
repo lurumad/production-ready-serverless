@@ -47,7 +47,12 @@ const getRestaurantes = async () => {
 };
 
 module.exports.handler = async (event, context) => {
+  console.log("------------------------");
+  console.log("------------------------");
+  console.log("------------------------");
+  console.log("------------------------");
   const restaurants = await getRestaurantes();
+  console.log("========================" + restaurants);
   console.log(`found ${restaurants.length} restaurants`);
   const template = loadHtml();
   const dayOfWeek = days[new Date().getDay()];

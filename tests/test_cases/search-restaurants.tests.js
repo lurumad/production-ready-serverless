@@ -26,7 +26,7 @@ describe(`When we invoke the POST /restaurants/search endpoint with theme 'carto
 
   it(`Should return an array of 4 restaurants`, async () => {
     let res = await when.we_invoke_search_restaurants("cartoon", user);
-
+    console.log("res test: " + res);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveLength(4);
 
@@ -38,7 +38,7 @@ describe(`When we invoke the POST /restaurants/search endpoint with theme 'carto
 
   it(`Should return an empty array of restaurants when no theme`, async () => {
     let res = await when.we_invoke_search_restaurants("", user);
-
+    console.log("res test: " + res);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveLength(0);
 

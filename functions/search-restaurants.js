@@ -1,9 +1,13 @@
 const { DynamoDB } = require("@aws-sdk/client-dynamodb");
 const { unmarshall, marshall } = require("@aws-sdk/util-dynamodb");
+const middy = require("@middy/core");
+const ssm = require("@middy/ssm");
 const dynamodb = new DynamoDB();
 
-const defaultResults = process.env.defaultResults || 8;
+const { serviceName, ssmStage } = process.env;
 const tableName = process.env.restaurants_table;
+const middyCacheEnabled = JSON.parse(process.env.middy_cache_enabled);
+const middyCacheExpiry = parseInt(process.env.middy_cache_expiry_milliseconds);
 
 const findRestaurantsByTheme = async (theme, count) => {
   console.log(`finding (up to${count}) restaurants with the theme ${theme}...`);
@@ -20,11 +24,14 @@ const findRestaurantsByTheme = async (theme, count) => {
 };
 
 module.exports.handler = async (event, context) => {
+  console.log("====================================");
+  console.info(context.secretString);
   const request = JSON.parse(event.body);
   const theme = request.theme;
 
-  const restaurants = await findRestaurantsByTheme(theme, defaultResults);
-
+  const restaurants = await findRestaurantsByTheme(theme, 8);
+  console.log("====================================");
+  console.log(restaurants);
   const response = {
     statusCode: 200,
     body: JSON.stringify(restaurants),

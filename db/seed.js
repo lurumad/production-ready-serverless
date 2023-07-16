@@ -65,5 +65,5 @@ module.exports.seed = async (event, context) => {
     },
   };
 
-  dynamoDB.batchWriteItem(request).promise();
+  await dynamoDB.batchWriteItem(request).promise();
 };
