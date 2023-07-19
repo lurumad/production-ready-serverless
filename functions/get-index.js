@@ -5,9 +5,11 @@ const aws4 = require("aws4");
 const URL = require("url");
 
 const restaurantsApiRoot = process.env.restaurants_api;
+const ordersApiRoot = process.env.orders_api;
 const cognitoUserPoolId = process.env.cognito_user_pool_id;
 const cognitoClientId = process.env.cognito_client_id;
 const awsRegion = process.env.AWS_REGION;
+
 const days = [
   "Sunday",
   "Monday",
@@ -18,43 +20,27 @@ const days = [
   "Saturday",
 ];
 
-let html;
+const template = fs.readFileSync("static/index.html", "utf-8");
 
-function loadHtml() {
-  if (!html) {
-    console.log("loading index.html...");
-    html = fs.readFileSync("static/index.html", "utf-8");
-    console.log("loaded");
-  }
-  return html;
-}
-
-const getRestaurantes = async () => {
-  console.log(`loading restaurants from API ${restaurantsApiRoot}...`);
+const getRestaurants = async () => {
+  console.log(`loading restaurants from ${restaurantsApiRoot}...`);
   const url = URL.parse(restaurantsApiRoot);
-  const options = {
+  const opts = {
     host: url.hostname,
     path: url.pathname,
   };
 
-  aws4.sign(options);
+  aws4.sign(opts);
 
-  const httpRequest = http.get(restaurantsApiRoot, {
-    headers: options.headers,
+  const httpReq = http.get(restaurantsApiRoot, {
+    headers: opts.headers,
   });
-
-  return (await httpRequest).data;
+  return (await httpReq).data;
 };
 
 module.exports.handler = async (event, context) => {
-  console.log("------------------------");
-  console.log("------------------------");
-  console.log("------------------------");
-  console.log("------------------------");
-  const restaurants = await getRestaurantes();
-  console.log("========================" + restaurants);
+  const restaurants = await getRestaurants();
   console.log(`found ${restaurants.length} restaurants`);
-  const template = loadHtml();
   const dayOfWeek = days[new Date().getDay()];
   const view = {
     awsRegion,
@@ -63,6 +49,7 @@ module.exports.handler = async (event, context) => {
     dayOfWeek,
     restaurants,
     searchUrl: `${restaurantsApiRoot}/search`,
+    placeOrderUrl: ordersApiRoot,
   };
   const html = Mustache.render(template, view);
   const response = {

@@ -16,9 +16,8 @@ const viaHandler = async (event, functionName) => {
     "headers.content-type",
     "application/json"
   );
-  console.log(response);
-  console.log(contentType);
-  if (response.body && contentType === "application/json") {
+
+  if (_.get(response, "body") && contentType === "application/json") {
     response.body = JSON.parse(response.body);
   }
   return response;
@@ -48,24 +47,23 @@ const viaHttp = async (relPath, method, opts) => {
   try {
     const data = _.get(opts, "body");
     let headers = {};
+
     if (_.get(opts, "iam_auth", false) === true) {
       headers = signHttpRequest(url);
     }
-    console.log("headers: " + headers);
+
     const authHeader = _.get(opts, "auth");
     if (authHeader) {
       headers.Authorization = authHeader;
     }
-    console.log("headers 2: " + headers);
+
     const httpReq = http.request({
       method,
       url,
       headers,
       data,
     });
-    console.log("httpReq: " + httpReq);
     const res = await httpReq;
-    console.log("res: " + res);
     return respondFrom(res);
   } catch (err) {
     if (err.status) {
@@ -115,8 +113,32 @@ const we_invoke_search_restaurants = async (theme, user) => {
   }
 };
 
+const we_invoke_place_order = async (user, restaurantName) => {
+  const body = JSON.stringify({ restaurantName });
+
+  switch (mode) {
+    case "handler":
+      return await viaHandler({ body }, "place-order");
+    case "http":
+      const auth = user.idToken;
+      return await viaHttp("orders", "POST", { body, auth });
+    default:
+      throw new Error(`unsupported mode: ${mode}`);
+  }
+};
+
+const we_invoke_notify_restaurant = async (event) => {
+  if (mode === "handler") {
+    await viaHandler(event, "notify-restaurant");
+  } else {
+    throw new Error(`unsupported mode: ${mode}`);
+  }
+};
+
 module.exports = {
   we_invoke_get_index,
   we_invoke_get_restaurants,
   we_invoke_search_restaurants,
+  we_invoke_place_order,
+  we_invoke_notify_restaurant,
 };
