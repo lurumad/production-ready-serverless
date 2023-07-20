@@ -27,7 +27,7 @@ module.exports.handler = async (event) => {
       {
         Source: "big-mouth",
         DetailType: "restaurant_notified",
-        Detail: JSON.stringify({ order }),
+        Detail: JSON.stringify(order),
         EventBusName: busName,
       },
     ],

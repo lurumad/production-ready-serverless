@@ -3,8 +3,27 @@ const _ = require("lodash");
 const aws4 = require("aws4");
 const URL = require("url");
 const http = require("axios");
+const {
+  EventBridgeClient,
+  PutEventsCommand,
+} = require("@aws-sdk/client-eventbridge");
 
 const mode = process.env.TEST_MODE;
+
+const viaEventBridge = async (busName, source, detailType, detail) => {
+  const eventBridge = new EventBridgeClient();
+  const putEventsCmd = new PutEventsCommand({
+    Entries: [
+      {
+        Source: source,
+        DetailType: detailType,
+        Detail: JSON.stringify(detail),
+        EventBusName: busName,
+      },
+    ],
+  });
+  await eventBridge.send(putEventsCmd);
+};
 
 const viaHandler = async (event, functionName) => {
   const handler = require(`${APP_ROOT}/functions/${functionName}`).handler;
@@ -131,7 +150,13 @@ const we_invoke_notify_restaurant = async (event) => {
   if (mode === "handler") {
     await viaHandler(event, "notify-restaurant");
   } else {
-    throw new Error(`unsupported mode: ${mode}`);
+    const busName = process.env.bus_name;
+    await viaEventBridge(
+      busName,
+      event.source,
+      event["detail-type"],
+      event.detail
+    );
   }
 };
 
