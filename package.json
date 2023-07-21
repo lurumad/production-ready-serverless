@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dotEnv": "sls export-env --all",
+    "seed": "npm run dotEnv && node seed-restaurants.js",
     "test": "npm run dotEnv && cross-env TEST_MODE=handler jest",
     "acceptance": "npm run dotEnv && cross-env TEST_MODE=http jest"
   },
